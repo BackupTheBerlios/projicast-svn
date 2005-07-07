@@ -1,0 +1,28 @@
+<project name="projicast_client" default="dist" basedir=".">
+	
+	<description>
+		build file for the ProjiCast Client
+	</description>
+	
+	<property name="src" location="src/"/>
+	<property name="bin" location="bin/"/>
+	<property name="dist" location="dist/"/>
+	
+	<target name="init">
+		<mkdir dir="${bin}"/>
+		<mkdir dir="${dist}"/>
+	</target>
+	
+	<target name="compile" depends="init">
+		<javac srcdir="${src}" destdir="${bin}" debug="true"/>
+	</target>
+	
+	<target name="dist" depends="compile">
+		<jar destfile="${dist}/projicast_client.jar">
+			<fileset dir="${bin}"/>
+			<manifest>
+				<attribute name="Main-Class" value="de.berlios.projicast.client.ProjiCastClient"/>
+			</manifest>
+		</jar>
+	</target>
+</project>
