@@ -39,6 +39,7 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
+
 /**
  * Class for displaying images in fullscreen mode using Java 2D API.
  * This class does pretty much everything in its drawing thread to not
@@ -124,7 +125,12 @@ public class ImageDisplayer
      */
     public synchronized void displayImage(File file) throws IOException
     {
+        if(isUp == false)
+        {
+            throw new IllegalStateException("Not up");
+        }
         BufferedImage newImage = ImageIO.read(file);
+        displayImage(newImage);
     }
     
     /**
@@ -132,6 +138,10 @@ public class ImageDisplayer
      */
     public synchronized void displayImage(BufferedImage newImage)
     {
+        if(isUp == false)
+        {
+            throw new IllegalStateException("Not up");
+        }
         image = copy(newImage, BufferedImage.TYPE_INT_ARGB);
     }
     
@@ -234,7 +244,6 @@ public class ImageDisplayer
                             strat.show();
                             Thread.sleep(10);
                         }
-                        
                         BufferedImage old = curImg;
                         BufferedImage newI = image;
                         
@@ -244,7 +253,6 @@ public class ImageDisplayer
                 }
                 catch(InterruptedException e) {}
                 
-                //strat = null;
                 dev.setFullScreenWindow(null);
                 win.setVisible(false);
                 

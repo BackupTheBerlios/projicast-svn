@@ -183,10 +183,6 @@ public class FileTransferSession extends BasicInputHandler
                 {
                     fileType = Configuration.FileType.IMAGE;
                 }
-                else if(split[1].equals("SLDSHW"))
-                {
-                    fileType = Configuration.FileType.SLIDESHOW;
-                }
                 else
                 {
                     close();
@@ -206,9 +202,6 @@ public class FileTransferSession extends BasicInputHandler
                         break;
                     case IMAGE:
                         path = configuration.getImageManager().getPath();
-                        break;
-                    case SLIDESHOW:
-                        path = configuration.getSlideshowManager().getPath();
                         break;
                 }
                 

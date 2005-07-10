@@ -23,6 +23,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileInputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Properties;
 
 import javax.imageio.ImageIO;
@@ -92,7 +93,6 @@ public class ProjiCast
         
         File videoPath = new File(prop.getProperty("videoPath", "video"));
         File imagePath = new File(prop.getProperty("imagePath", "images"));
-        File slideshowPath = new File(prop.getProperty("slideshowPath", "slideshow"));
         
         if(!videoPath.exists() && !videoPath.mkdirs())
         {
@@ -106,13 +106,6 @@ public class ProjiCast
             System.err.println("Could not create the image storage directory. Please create it " +
                     "manually or specify another path in the configuration file.");
             System.exit(8);
-        }
-        
-        if(!slideshowPath.exists() && !slideshowPath.mkdirs())
-        {
-            System.err.println("Could not create the slideshow storage directory. Please create it " +
-                    "manually or specify another path in the configuration file.");
-            System.exit(9);
         }
         
         String strEffect = prop.getProperty("transitionEffect", "none");
@@ -173,17 +166,17 @@ public class ProjiCast
         catch (InterruptedException e) {}
         imageDisp.fadeToBlack();
         
-        Player player = new Player(imageDisp, mplayerPath, slideshowPath, slideshowDelay);
+        Player player = new Player(imageDisp, mplayerPath, slideshowDelay);
         FileManager videoManager = new FileManager(videoPath);
         FileManager imageManager = new FileManager(imagePath);
-        FileManager slideshowManager = new FileManager(slideshowPath);
         Configuration configuration = new Configuration(
                 player, 
                 Charset.forName("UTF-8"), 
                 password, 
                 videoManager, 
                 imageManager,
-                slideshowManager);
+                new ArrayList<Integer>()); //TODO fix this
+        configuration.load();
         
         ServerThread thread = new ServerThread(configuration, port, ftPort);
         thread.start();

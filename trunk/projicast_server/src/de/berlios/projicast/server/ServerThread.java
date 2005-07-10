@@ -82,7 +82,7 @@ public class ServerThread extends Thread
             while(running)
             {
                 ByteBuffer buf = ByteBuffer.allocateDirect(8 * 4096);
-                int len;
+                int len = 0;
                 Iterator<SelectionKey> it;
                 Set<SelectionKey> keys;
                 selector.select();
@@ -100,7 +100,14 @@ public class ServerThread extends Thread
                     {
                         InputHandler session = (InputHandler)key.attachment();
                         SocketChannel ch = (SocketChannel)key.channel();
-                        len = ch.read(buf);
+                        try
+                        {
+                            len = ch.read(buf);
+                        }
+                        catch(IOException e)
+                        {
+                            e.printStackTrace();
+                        }
                         if(len != -1)
                         {
                             buf.flip();

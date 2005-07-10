@@ -18,6 +18,7 @@
  */
 
 package de.berlios.projicast.server;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -25,6 +26,8 @@ import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.CharacterCodingException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 
@@ -35,10 +38,14 @@ import java.util.Map;
 public class ControlSession extends BasicInputHandler
 {
     enum State { NEW, AUTH_STRING_SENT, LOGGED_IN }
+    enum SubState { IDLE, RECEIVING_PLAYLIST }
     
     private Configuration configuration;
     private State state = State.NEW;
+    private SubState subState = SubState.IDLE;
     private String authString;
+    
+    private List<Integer> tmpPlaylist;
     
     /**
      * Creates a new Session with the specified Charset and password.
@@ -65,18 +72,23 @@ public class ControlSession extends BasicInputHandler
             System.err.println("Error while decoding characters: " + e.getMessage());
             close();
         }
-        String command = getLine();
-        if(command != null)
+        String command = null;
+        
+        do
         {
-            if(state != State.LOGGED_IN)
+            command = getLine();
+            if(command != null)
             {
-                auth(command);
+                if(state != State.LOGGED_IN)
+                {
+                    auth(command);
+                }
+                else
+                {
+                    process(command);
+                }
             }
-            else
-            {
-                process(command);
-            }
-        }
+        } while(command != null);
     }
     
     /**
@@ -131,59 +143,82 @@ public class ControlSession extends BasicInputHandler
     {
         try
         {
+            
             String[] split = command.split(" ");
-            if(command.equals("REFRESH"))
+            if(subState == SubState.IDLE) 
             {
-                configuration.getVideoManager().refresh();
-                configuration.getImageManager().refresh();
-                configuration.getSlideshowManager().refresh();
-                sendFileList();
-            }
-            else if(command.equals("SLIDESHOW"))
-            {
-                configuration.getPlayer().slideshow();
-                writeCommand("SLIDESHOW OK");
-            }
-            else if(command.equals("STOP"))
-            {
-                configuration.getPlayer().stop();
-                writeCommand("STOP OK");
-            }
-            else if((split.length == 2) && split[0].equals("PLAY"))
-            {
-                playVideo(Integer.parseInt(split[1]));
-            }
-            else if((split.length == 2) && split[0].equals("IMAGE"))
-            {
-                displayImage(Integer.parseInt(split[1]));
-            }
-            else if((split.length == 3) && split[0].equals("DELETE"))
-            {
-                if(split[1].equals("VIDEO"))
+                /*
+                 * The follwing commands are only allowed in IDLE state
+                 */
+                if(command.equals("REFRESH"))
                 {
-                    deleteFile(Integer.parseInt(split[2]), Configuration.FileType.VIDEO);
+                    configuration.getVideoManager().refresh();
+                    configuration.getImageManager().refresh();
+                    sendFileList();
+                    configuration.save();
+                    return;
                 }
-                else if(split[1].equals("IMAGE"))
+                else if(command.equals("SLIDESHOW"))
                 {
-                    deleteFile(Integer.parseInt(split[2]), Configuration.FileType.IMAGE);
+                    configuration.getPlayer().slideshow(configuration.playlistAsFiles());
+                    writeCommand("SLIDESHOW OK");
+                    return;
                 }
-                else if(split[1].equals("SLDSHW"))
+                else if(command.equals("STOP"))
                 {
-                    deleteFile(Integer.parseInt(split[2]), Configuration.FileType.SLIDESHOW);
+                    configuration.getPlayer().stop();
+                    writeCommand("STOP OK");
+                    return;
                 }
-                else
+                else if((split.length == 2) && split[0].equals("PLAY"))
                 {
-                    close();
+                    playVideo(Integer.parseInt(split[1]));
+                    return;
+                }
+                else if((split.length == 2) && split[0].equals("IMAGE"))
+                {
+                    displayImage(Integer.parseInt(split[1]));
+                    return;
+                }
+                else if((split.length == 3) && split[0].equals("DELETE"))
+                {
+                    if(split[1].equals("VIDEO"))
+                    {
+                        deleteFile(Integer.parseInt(split[2]), Configuration.FileType.VIDEO);
+                        return;
+                    }
+                    else if(split[1].equals("IMAGE"))
+                    {
+                        deleteFile(Integer.parseInt(split[2]), Configuration.FileType.IMAGE);
+                        return;
+                    }
+                    else
+                    {
+                        close();
+                    }
                 }
             }
-            else
+            
+            /*
+             * The playlist command may be allowed depending on the parameter, but that's
+             * not up to the process method to decide so we send it to the processPlaylist
+             * method.
+             */
+            if((split.length == 2) && split[0].equals("PLIST"))
             {
-                close();
+                processPlaylist(split);
+                return;
             }
+            
+            close(); //We should only get here if the command is invalid
         }
-        catch (NumberFormatException e)
+        catch(NumberFormatException e)
         {
             close();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
         }
     }
     
@@ -253,9 +288,6 @@ public class ControlSession extends BasicInputHandler
             case IMAGE:
                 manager = configuration.getImageManager();
                 break;
-            case SLIDESHOW:
-                manager = configuration.getSlideshowManager();
-                break;
         }
         File file = manager.getFile(id);
         if(file != null)
@@ -293,11 +325,10 @@ public class ControlSession extends BasicInputHandler
                 writeCommand("IMAGE " + entry.getKey() + " " + encodedName);
             }
             
-            files = configuration.getSlideshowManager().getFileList();
-            for(Map.Entry<Integer, File> entry : files.entrySet())
+            List<Integer> plist = configuration.getSlideshowPlaylist();
+            for(Integer item : plist)
             {
-                encodedName = URLEncoder.encode(entry.getValue().getName(), configuration.getCharset().name());
-                writeCommand("SLDSHW " + entry.getKey() + " " + encodedName);
+                writeCommand("PLIST " + item.toString());
             }
             
             writeCommand("LIST END");
@@ -305,6 +336,41 @@ public class ControlSession extends BasicInputHandler
         catch(UnsupportedEncodingException e)
         {
             //should never happen
+            close();
+        }
+    }
+    
+    /**
+     * Processes a set-playlist command.
+     */
+    private void processPlaylist(String[] split)
+    {
+        try
+        {
+            if((subState == SubState.IDLE) && split[1].equals("BEGIN"))
+            {
+                subState = SubState.RECEIVING_PLAYLIST;
+                tmpPlaylist = new ArrayList<Integer>();
+                writeCommand("PLIST READY");
+            }
+            else if(subState == SubState.RECEIVING_PLAYLIST)
+            {
+                if(split[1].equals("END"))
+                {
+                    configuration.setSlideshowPlaylist(tmpPlaylist);
+                    tmpPlaylist = null;
+                    subState = SubState.IDLE;
+                    writeCommand("PLIST OK");
+                    configuration.save();
+                }
+                else
+                {
+                    tmpPlaylist.add(new Integer(split[1]));
+                }
+            }
+        }
+        catch(NumberFormatException e)
+        {
             close();
         }
     }

@@ -20,6 +20,7 @@
 package de.berlios.projicast.server;
 
 import java.io.File;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -27,7 +28,7 @@ import java.util.Map;
 /**
  * Class for managing files and binding them to file ID:s.
  */
-public class FileManager
+public class FileManager implements Serializable
 {
     private File path;
     private HashMap<Integer, File> fileList;

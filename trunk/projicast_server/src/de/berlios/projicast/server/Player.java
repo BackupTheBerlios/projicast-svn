@@ -21,6 +21,7 @@ package de.berlios.projicast.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 /**
  * This is the class responsible for playing the files, enqueueing them.
@@ -43,8 +44,8 @@ public class Player
     //is played and the slideshow was running before
     private boolean autoSlideshow = false;
     
-    private File slideshowPath;
     private long slideshowDelay;
+    private List<File> lastPlaylist;
     
     private final static String xDisplay = ":0.0";
     
@@ -56,11 +57,10 @@ public class Player
      * @param mplayerPath  the path to the mplayer executable
      * @param slideshowPath  the path to the slideshow folder
      */
-    public Player(ImageDisplayer imageDisp, String mplayerPath, File slideshowPath, long slideshowDelay)
+    public Player(ImageDisplayer imageDisp, String mplayerPath, long slideshowDelay)
     {
         this.imageDisp = imageDisp;
         this.mplayerPath = mplayerPath;
-        this.slideshowPath = slideshowPath;
         this.slideshowDelay = slideshowDelay;
         if(!imageDisp.isUp())
         {
@@ -71,11 +71,12 @@ public class Player
     /**
      * Starts the slideshow.
      */
-    public synchronized void slideshow()
+    public synchronized void slideshow(List<File> playlist)
     {
         autoSlideshow = true;
+        lastPlaylist = playlist;
         internalStop();
-        slideshowThread = new SlideshowThread(slideshowDelay);
+        slideshowThread = new SlideshowThread(playlist, slideshowDelay);
         slideshowThread.start();
         state = State.PLAYING_SLIDESHOW;
     }
@@ -193,7 +194,7 @@ public class Player
                     imageDisp.fireUp();
                     if(autoSlideshow) //As stated above, start slideshow if autoSlideshow is set
                     {
-                        slideshow();
+                        slideshow(lastPlaylist);
                     }
                 }
                 else
@@ -223,6 +224,7 @@ public class Player
     private class SlideshowThread extends Thread
     {
         private boolean cancel = false;
+        private List<File> playlist;
         private long delay;
         
         /**
@@ -230,8 +232,9 @@ public class Player
          * 
          * @param delay  the delay between images in milliseconds
          */
-        public SlideshowThread(long delay)
+        public SlideshowThread(List<File> playlist, long delay)
         {
+            this.playlist = playlist;
             this.delay = delay;
         }
         
@@ -246,14 +249,13 @@ public class Player
         
         public void run()
         {
-            File[] files = slideshowPath.listFiles();
             try
             {
                 while(!cancel)
                 {
-                    for(int i = 0; (i < files.length) && !cancel; i++)
+                    for(File file : playlist)
                     {
-                        imageDisp.displayImage(files[i]);
+                        imageDisp.displayImage(file);
                         Thread.sleep(delay);
                     }
                 }
