@@ -28,9 +28,12 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.AbstractListModel;
 import javax.swing.BorderFactory;
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
@@ -50,7 +53,7 @@ public class ProjiCastClient extends JFrame
     
     private ServerFileListModel videoModel;
     private ServerFileListModel imageModel;
-    private ServerFileListModel slideshowModel;
+    private DefaultListModel slideshowModel;
     
     /**
      * Constructs a new ProjiCastClient using the specified Client.
@@ -64,8 +67,9 @@ public class ProjiCastClient extends JFrame
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         videoModel = new ServerFileListModel(ServerFile.Type.VIDEO);
         imageModel = new ServerFileListModel(ServerFile.Type.IMAGE);
-        slideshowModel = new ServerFileListModel(ServerFile.Type.SLIDESHOW);
+        slideshowModel = new DefaultListModel();
         createGUI();
+        updateLists();
     }
     
     public void createGUI()
@@ -88,6 +92,7 @@ public class ProjiCastClient extends JFrame
         gc.gridy = 1;
         gc.weightx = 1;
         gc.weighty = 1;
+        gc.gridheight = 2;
         gc.fill = GridBagConstraints.BOTH;
         videoList = new JList(videoModel);
         scrollPane = new JScrollPane(videoList, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -95,9 +100,10 @@ public class ProjiCastClient extends JFrame
         pane.add(scrollPane, gc);
         
         gc.gridx = 0;
-        gc.gridy = 2;
+        gc.gridy = 3;
         gc.weightx = 0;
         gc.weighty = 0;
+        gc.gridheight = 1;
         button = new JButton("Play video");
         button.addActionListener(new ActionListener()
         {
@@ -109,9 +115,10 @@ public class ProjiCastClient extends JFrame
         pane.add(button, gc);
         
         gc.gridx = 0;
-        gc.gridy = 3;
+        gc.gridy = 4;
         gc.weightx = 0;
         gc.weighty = 0;
+        gc.gridheight = 1;
         button = new JButton("Upload video");
         button.addActionListener(new ActionListener()
         {
@@ -123,9 +130,10 @@ public class ProjiCastClient extends JFrame
         pane.add(button, gc);
         
         gc.gridx = 0;
-        gc.gridy = 4;
+        gc.gridy = 5;
         gc.weightx = 0;
         gc.weighty = 0;
+        gc.gridheight = 1;
         button = new JButton("Delete video");
         button.addActionListener(new ActionListener()
         {
@@ -145,6 +153,7 @@ public class ProjiCastClient extends JFrame
         gc.gridy = 1;
         gc.weightx = 1;
         gc.weighty = 1;
+        gc.gridheight = 2;
         gc.fill = GridBagConstraints.BOTH;
         imageList = new JList(imageModel);
         scrollPane = new JScrollPane(imageList, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
@@ -152,9 +161,10 @@ public class ProjiCastClient extends JFrame
         pane.add(scrollPane, gc);
         
         gc.gridx = 1;
-        gc.gridy = 2;
+        gc.gridy = 3;
         gc.weightx = 0;
         gc.weighty = 0;
+        gc.gridheight = 1;
         button = new JButton("Display image");
         button.addActionListener(new ActionListener()
         {
@@ -166,9 +176,10 @@ public class ProjiCastClient extends JFrame
         pane.add(button, gc);
         
         gc.gridx = 1;
-        gc.gridy = 3;
+        gc.gridy = 4;
         gc.weightx = 0;
         gc.weighty = 0;
+        gc.gridheight = 1;
         button = new JButton("Upload image");
         button.addActionListener(new ActionListener()
         {
@@ -180,9 +191,10 @@ public class ProjiCastClient extends JFrame
         pane.add(button, gc);
         
         gc.gridx = 1;
-        gc.gridy = 4;
+        gc.gridy = 5;
         gc.weightx = 0;
         gc.weighty = 0;
+        gc.gridheight = 1;
         button = new JButton("Delete image");
         button.addActionListener(new ActionListener()
         {
@@ -194,24 +206,28 @@ public class ProjiCastClient extends JFrame
         pane.add(button, gc);
         
         //=========================================
-        gc.gridx = 2;
+        gc.gridx = 3;
         gc.gridy = 0;
-        pane.add(new JLabel("Slideshow files:"), gc);
+        pane.add(new JLabel("Slideshow playlist:"), gc);
         
-        gc.gridx = 2;
+        gc.gridx = 3;
         gc.gridy = 1;
         gc.weightx = 1;
         gc.weighty = 1;
+        gc.gridheight = 1;
+        gc.gridwidth = 2;
         gc.fill = GridBagConstraints.BOTH;
         slideshowList = new JList(slideshowModel);
         scrollPane = new JScrollPane(slideshowList, JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED, JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.setPreferredSize(new Dimension(200, 200));
         pane.add(scrollPane, gc);
         
-        gc.gridx = 2;
-        gc.gridy = 2;
+        gc.gridx = 3;
+        gc.gridy = 3;
         gc.weightx = 0;
         gc.weighty = 0;
+        gc.gridheight = 1;
+        gc.gridwidth = 2;
         button = new JButton("Play slideshow");
         button.addActionListener(new ActionListener()
         {
@@ -222,39 +238,86 @@ public class ProjiCastClient extends JFrame
         });
         pane.add(button, gc);
         
-        gc.gridx = 2;
-        gc.gridy = 3;
-        gc.weightx = 0;
-        gc.weighty = 0;
-        button = new JButton("Upload slideshow image");
-        button.addActionListener(new ActionListener()
-        {
-            public void actionPerformed(ActionEvent arg0)
-            {
-                uploadFile(ServerFile.Type.SLIDESHOW);
-            }
-        });
-        pane.add(button, gc);
-        
-        gc.gridx = 2;
+        gc.gridx = 3;
         gc.gridy = 4;
         gc.weightx = 0;
         gc.weighty = 0;
-        button = new JButton("Delete slideshow image");
+        gc.gridheight = 1;
+        gc.gridwidth = 2;
+        button = new JButton("Set playlist on server");
         button.addActionListener(new ActionListener()
         {
             public void actionPerformed(ActionEvent arg0)
             {
-                deleteFile(ServerFile.Type.SLIDESHOW);
+                playlistSet();
             }
         });
         pane.add(button, gc);
         
+        gc.gridx = 3;
+        gc.gridy = 5;
+        gc.weightx = 0;
+        gc.weighty = 0;
+        gc.gridheight = 1;
+        gc.gridwidth = 2;
+        button = new JButton("Delete entry");
+        button.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent arg0)
+            {
+                playlistRemove();
+            }
+        });
+        pane.add(button, gc);
+        
+        gc.gridx = 3;
+        gc.gridy = 2;
+        gc.weightx = 0;
+        gc.weighty = 0;
+        gc.gridheight = 1;
+        gc.gridwidth = 1;
+        button = new JButton("Up");
+        button.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent arg0)
+            {
+                playlistUp();
+            }
+        });
+        pane.add(button, gc);
+        
+        gc.gridx = 4;
+        gc.gridy = 2;
+        gc.weightx = 0;
+        gc.weighty = 0;
+        gc.gridheight = 1;
+        gc.gridwidth = 1;
+        button = new JButton("Down");
+        button.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent arg0)
+            {
+                playlistDown();
+            }
+        });
+        pane.add(button, gc);
+        
+        gc.gridx = 2;
+        gc.gridy = 1;
+        button = new JButton(">");
+        button.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent arg0)
+            {
+                playlistAdd();
+            }
+        });
+        pane.add(button, gc);
         //==========================================
         
         gc.gridx = 0;
-        gc.gridy = 5;
-        gc.gridwidth = 3;
+        gc.gridy = 6;
+        gc.gridwidth = 5;
         button = new JButton("STOP");
         button.addActionListener(new ActionListener()
         {
@@ -283,7 +346,7 @@ public class ProjiCastClient extends JFrame
         });
         panel.add(button, gc);
         
-        gc.gridx = 3;
+        gc.gridx = 5;
         gc.gridy = 1;
         gc.gridheight = 5;
         pane.add(panel, gc);
@@ -298,7 +361,12 @@ public class ProjiCastClient extends JFrame
     {
         videoModel.refresh();
         imageModel.refresh();
-        slideshowModel.refresh();
+        
+        slideshowModel.clear();
+        for(ServerFile file : client.getSlideshowPlaylist())
+        {
+            slideshowModel.addElement(file);
+        }
     }
     
     /**
@@ -479,9 +547,6 @@ public class ProjiCastClient extends JFrame
                 case IMAGE:
                     list = imageList;
                     break;
-                case SLIDESHOW:
-                    list = slideshowList;
-                    break;
             }
             ServerFile file = (ServerFile)list.getSelectedValue();
             client.deleteFile(file);
@@ -511,6 +576,83 @@ public class ProjiCastClient extends JFrame
     }
     
     /**
+     * Moves the selected playlist entry one step up.
+     */
+    private void playlistUp()
+    {
+        ServerFile file = (ServerFile)slideshowList.getSelectedValue();
+        int index = slideshowList.getSelectedIndex();
+        if((file != null) && ((index - 1) >= 0))
+        {
+            slideshowModel.remove(index);
+            slideshowModel.insertElementAt(file, index - 1);
+            slideshowList.setSelectedIndex(index - 1);
+        }
+    }
+    
+    /**
+     * Moves the selected playlist entry one step down.
+     */
+    private void playlistDown()
+    {
+        ServerFile file = (ServerFile)slideshowList.getSelectedValue();
+        int index = slideshowList.getSelectedIndex();
+        if((file != null) && ((index + 1) < slideshowModel.getSize()))
+        {
+            slideshowModel.remove(index);
+            slideshowModel.insertElementAt(file, index + 1);
+            slideshowList.setSelectedIndex(index + 1);
+        }
+    }
+    
+    /**
+     * Adds the selected image file to the playlist.
+     */
+    private void playlistAdd()
+    {
+        ServerFile file = (ServerFile)imageList.getSelectedValue();
+        slideshowModel.addElement(file);
+    }
+    
+    /**
+     * Removes the selected image from the playlist.
+     */
+    private void playlistRemove()
+    {
+        slideshowModel.remove(slideshowList.getSelectedIndex());
+    }
+    
+    /**
+     * Sets the playlist on the server.
+     */
+    private void playlistSet()
+    {
+        try
+        {
+            List<ServerFile> playlist = new ArrayList<ServerFile>();
+            for(Object obj : slideshowModel.toArray())
+            {
+                playlist.add((ServerFile)obj);
+            }
+            client.setSlideshowPlaylist(playlist);
+        }
+        catch(MalformedAnswerException e)
+        {
+            unexpectedReply();
+        }
+        catch (ProjiCastException e)
+        {
+            e.printStackTrace();
+        }
+        catch (IOException e)
+        {
+            inputOutputError(e);
+        }
+    }
+    
+    //=============================
+    
+    /**
      * Called when the server replies unexpectedly.
      */
     private void unexpectedReply()
@@ -531,7 +673,7 @@ public class ProjiCastClient extends JFrame
     {
         JOptionPane.showMessageDialog(
                 this,
-                "An exception occurred when trying to play the file: " + e.getMessage(),
+                "An exception occurred when trying to carry out the operation: " + e.getMessage(),
                 "Error",
                 JOptionPane.ERROR_MESSAGE);
     }
@@ -576,9 +718,6 @@ public class ProjiCastClient extends JFrame
                 case IMAGE:
                     files = client.getImageFiles();
                     break;
-                case SLIDESHOW:
-                    files = client.getSlideshowFiles();
-                    break;
             }
             return files[pos];
         }
@@ -593,9 +732,6 @@ public class ProjiCastClient extends JFrame
                     break;
                 case IMAGE:
                     files = client.getImageFiles();
-                    break;
-                case SLIDESHOW:
-                    files = client.getSlideshowFiles();
                     break;
             }
             length = files.length;

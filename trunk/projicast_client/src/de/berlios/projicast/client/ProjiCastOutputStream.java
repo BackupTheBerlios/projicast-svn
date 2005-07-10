@@ -120,9 +120,6 @@ public class ProjiCastOutputStream extends OutputStream
                 case IMAGE:
                     strType = "IMAGE";
                     break;
-                case SLIDESHOW:
-                    strType = "SLDSHW";
-                    break;
             }
             out.println("FILE " + strType + " " + size + " " + URLEncoder.encode(name, "UTF-8"));
             out.flush();

@@ -27,7 +27,10 @@ import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -47,9 +50,11 @@ public class Client
     private BufferedReader in;
     private PrintWriter out;
     
-    private HashMap<Integer, ServerFile> videoFiles;
-    private HashMap<Integer, ServerFile> imageFiles;
-    private HashMap<Integer, ServerFile> slideshowFiles;
+    private Map<Integer, ServerFile> videoFiles;
+    private Map<Integer, ServerFile> imageFiles;
+    private List<ServerFile> playlist;
+    
+    
     
     /**
      * Creates a new Client for connecting to the specified host and port.
@@ -64,9 +69,9 @@ public class Client
         this.port = port;
         this.password = password;
         
-        videoFiles = new HashMap<Integer, ServerFile>(10);
-        imageFiles = new HashMap<Integer, ServerFile>(10);
-        slideshowFiles = new HashMap<Integer, ServerFile>(10);
+        videoFiles = new HashMap<Integer, ServerFile>();
+        imageFiles = new HashMap<Integer, ServerFile>();
+        playlist = new ArrayList<ServerFile>();
     }
     
     /**
@@ -149,57 +154,9 @@ public class Client
                 }
             }
             
-            command = in.readLine();
-            if(command.equals("LIST BEGIN"))
-            {
-                for(;;)
-                {
-                    command = in.readLine();
-                    split = command.split(" ");
-                    if(split.length == 3)
-                    {
-                        if(split[0].equals("VIDEO"))
-                        {
-                            Integer id = new Integer(split[1]);
-                            String name = URLDecoder.decode(split[2], "UTF-8");
-                            videoFiles.put(id, new ServerFile(name, ServerFile.Type.VIDEO, id));
-                        }
-                        else if(split[0].equals("IMAGE"))
-                        {
-                            Integer id = new Integer(split[1]);
-                            String name = URLDecoder.decode(split[2], "UTF-8");
-                            imageFiles.put(id, new ServerFile(name, ServerFile.Type.IMAGE, id));
-                        }
-                        else if(split[0].equals("SLDSHW"))
-                        {
-                            Integer id = new Integer(split[1]);
-                            String name = URLDecoder.decode(split[2], "UTF-8");
-                            slideshowFiles.put(id, new ServerFile(name, ServerFile.Type.SLIDESHOW, id));
-                        }
-                        else
-                        {
-                            close();
-                            throw new MalformedAnswerException("Unexpected answer: " + command);
-                        }
-                    }
-                    else if(command.equals("LIST END"))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        close();
-                        throw new MalformedAnswerException("Unexpected answer: " + command);
-                    }
-                }
-                
-                state = State.CONNECTED; //connected
-            }
-            else
-            {
-                close();
-                throw new MalformedAnswerException("Unexpected answer: " + command);
-            }
+            receiveLists();
+            
+            state = State.CONNECTED; //connected
         }
         catch(NumberFormatException e)
         {
@@ -252,23 +209,6 @@ public class Client
     }
     
     /**
-     * Returns an array of all slideshow files on the server.
-     * 
-     * @return an array of all slideshow files on the server
-     */
-    public ServerFile[] getSlideshowFiles()
-    {
-        if(state != State.CONNECTED)
-        {
-            throw new IllegalStateException("Must be connected");
-        }
-        synchronized(slideshowFiles)
-        {
-            return slideshowFiles.values().toArray(new ServerFile[0]);
-        }
-    }
-    
-    /**
      * Gets the video file specified by the specified ID.
      * 
      * @param id  the id of the file to get
@@ -307,25 +247,6 @@ public class Client
     }
     
     /**
-     * Gets the slideshow file specified by the specified ID.
-     * 
-     * @param id  the id of the file to get
-     *
-     * @return the file specified by the id
-     */
-    public ServerFile getSlideshowFile(int id)
-    {
-        if(state != State.CONNECTED)
-        {
-            throw new IllegalStateException("Must be connected");
-        }
-        synchronized(slideshowFiles)
-        {
-            return slideshowFiles.get(id);
-        }
-    }
-    
-    /**
      * Refreshes the file list from the server.
      * 
      * @throws MalformedAnswerException if the server sends something unexpected
@@ -340,74 +261,7 @@ public class Client
         out.flush();
         String command = null;
         
-        try
-        {
-            command = in.readLine();
-            if(command.equals("LIST BEGIN"))
-            {
-                videoFiles.clear();
-                imageFiles.clear();
-                slideshowFiles.clear();
-                for(;;)
-                {
-                    command = in.readLine();
-                    String[] split = command.split(" ");
-                    if(split.length == 3)
-                    {
-                        if(split[0].equals("VIDEO"))
-                        {
-                            Integer id = new Integer(split[1]);
-                            String name = URLDecoder.decode(split[2], "UTF-8");
-                            synchronized(videoFiles)
-                            {
-                                videoFiles.put(id, new ServerFile(name, ServerFile.Type.VIDEO, id));
-                            }
-                        }
-                        else if(split[0].equals("IMAGE"))
-                        {
-                            Integer id = new Integer(split[1]);
-                            String name = URLDecoder.decode(split[2], "UTF-8");
-                            synchronized(imageFiles)
-                            {
-                                imageFiles.put(id, new ServerFile(name, ServerFile.Type.IMAGE, id));
-                            }
-                        }
-                        else if(split[0].equals("SLDSHW"))
-                        {
-                            Integer id = new Integer(split[1]);
-                            String name = URLDecoder.decode(split[2], "UTF-8");
-                            synchronized(slideshowFiles)
-                            {
-                                slideshowFiles.put(id, new ServerFile(name, ServerFile.Type.SLIDESHOW, id));
-                            }
-                        }
-                        else
-                        {
-                            close();
-                            throw new MalformedAnswerException("Unexpected answer: " + command);
-                        }
-                    }
-                    else if(command.equals("LIST END"))
-                    {
-                        break;
-                    }
-                    else
-                    {
-                        close();
-                        throw new MalformedAnswerException("Unexpected answer: " + command);
-                    }
-                }
-            }
-        }
-        catch (NumberFormatException e)
-        {
-            throw new MalformedAnswerException("Invalid integers in command: " + command);
-        }
-        catch (UnsupportedEncodingException e)
-        {
-            close();
-            System.err.println("System does not support UTF-8 which is required for ProjiCast Client. Disconnected.");
-        }
+        receiveLists();
     }
     
     /**
@@ -535,9 +389,6 @@ public class Client
             case IMAGE:
                 type = "IMAGE";
                 break;
-            case SLIDESHOW:
-                type = "SLDSHW";
-                break;
         }
         
         out.println("DELETE " + type + " " + file.getID());
@@ -555,9 +406,66 @@ public class Client
     }
     
     /**
+     * Sets the slideshow playlist on the server.
+     * 
+     * @throws InvalidArgumentException  if any of the files aren't of the type IMAGE
+     *                                   or if they don't exist
+     */
+    public synchronized void setSlideshowPlaylist(List<ServerFile> pl) throws ProjiCastException, IOException
+    {
+        if(state != State.CONNECTED)
+        {
+            throw new IllegalStateException("Must be connected");
+        }
+        
+        //Check all files are valid
+        for(ServerFile file : pl)
+        {
+            if((file.getType() != ServerFile.Type.IMAGE) || !imageFiles.containsValue(file))
+            {
+                throw new IllegalArgumentException("Invalid ServerFile.");
+            }
+        }
+        
+        out.println("PLIST BEGIN");
+        out.flush();
+        
+        String command = in.readLine();
+        if(!command.equals("PLIST READY"))
+        {
+            throw new MalformedAnswerException("Unexpected answer: " + command);
+        }
+        
+        for(ServerFile file : pl)
+        {
+            out.println("PLIST " + file.getID());
+            out.flush();
+        }
+        
+        out.println("PLIST END");
+        out.flush();
+        
+        command = in.readLine();
+        if(!command.equals("PLIST OK"))
+        {
+            throw new MalformedAnswerException("Unexpected answer: " + command);
+        }
+        
+        playlist = pl;
+    }
+    
+    /**
+     * Returns the slideshow playlist.
+     */
+    public List<ServerFile> getSlideshowPlaylist()
+    {
+        return playlist;
+    }
+    
+    /**
      * Close connection to server.
      */
-    public void close()
+    public synchronized void close()
     {
         if((state != State.CONNECTED) && (state != State.AUTHING))
         {
@@ -573,6 +481,81 @@ public class Client
         catch(IOException e)
         {
             e.printStackTrace();
+        }
+    }
+    
+    private synchronized void receiveLists() throws ProjiCastException, IOException
+    {
+        String command = null;
+        
+        try
+        {
+            command = in.readLine();
+            
+            if(command.equals("LIST BEGIN"))
+            {
+                videoFiles.clear();
+                imageFiles.clear();
+                playlist = new ArrayList<ServerFile>(); //TODO good?
+                for(;;)
+                {
+                    command = in.readLine();
+                    String[] split = command.split(" ");
+                    if(split.length == 3)
+                    {
+                        if(split[0].equals("VIDEO"))
+                        {
+                            Integer id = new Integer(split[1]);
+                            String name = URLDecoder.decode(split[2], "UTF-8");
+                            synchronized(videoFiles)
+                            {
+                                videoFiles.put(id, new ServerFile(name, ServerFile.Type.VIDEO, id));
+                            }
+                        }
+                        else if(split[0].equals("IMAGE"))
+                        {
+                            Integer id = new Integer(split[1]);
+                            String name = URLDecoder.decode(split[2], "UTF-8");
+                            synchronized(imageFiles)
+                            {
+                                imageFiles.put(id, new ServerFile(name, ServerFile.Type.IMAGE, id));
+                            }
+                        }
+                        else
+                        {
+                            close();
+                            throw new MalformedAnswerException("Unexpected answer: " + command);
+                        }
+                    }
+                    else if((split.length == 2) && split[0].equals("PLIST"))
+                    {
+                        ServerFile file = imageFiles.get(new Integer(split[1]));
+                        if(file != null)
+                        {
+                            playlist.add(file);
+                        }
+                    }
+                    else if(command.equals("LIST END"))
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        close();
+                        throw new MalformedAnswerException("Unexpected answer: " + command);
+                    }
+                }
+            }
+        }
+        catch (NumberFormatException e)
+        {
+            throw new MalformedAnswerException("Invalid integers in command: " + command);
+        }
+        catch (UnsupportedEncodingException e)
+        {
+            close();
+            System.err.println(
+                    "System does not support UTF-8 which is required for ProjiCast Client. Disconnected.");
         }
     }
 }

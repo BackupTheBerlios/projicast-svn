@@ -24,7 +24,7 @@ package de.berlios.projicast.client;
  */
 public class ServerFile
 {
-    public enum Type { VIDEO, IMAGE, SLIDESHOW }
+    public enum Type { VIDEO, IMAGE }
     
     private Type type;
     private String filename;
