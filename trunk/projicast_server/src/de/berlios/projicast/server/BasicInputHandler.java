@@ -74,7 +74,7 @@ public abstract class BasicInputHandler implements InputHandler
      */
     protected void writeCommand(String command)
     {
-        System.out.println("OUT: " + command);
+        //System.out.println("OUT: " + command);
         CharBuffer cbuf = CharBuffer.allocate(command.length() + 1);
         cbuf.put(command);
         cbuf.put("\n");
@@ -122,7 +122,7 @@ public abstract class BasicInputHandler implements InputHandler
             {
                 buf.deleteCharAt(0);
             }
-            System.out.println("IN: " + line);
+            //System.out.println("IN: " + line);
             return line;
         }
         else
@@ -136,7 +136,6 @@ public abstract class BasicInputHandler implements InputHandler
      */
     public void close()
     {
-        System.out.println("!!CLOSE!!");
         try
         {
             if(ch.isOpen())

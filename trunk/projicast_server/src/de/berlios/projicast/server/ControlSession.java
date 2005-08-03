@@ -74,6 +74,7 @@ public class ControlSession extends BasicInputHandler
         }
         String command = null;
         
+        //Until the are no commands left in the buffer, run them
         do
         {
             command = getLine();
@@ -139,7 +140,7 @@ public class ControlSession extends BasicInputHandler
      * 
      * @param command  the command
      */
-    private void process(String command)
+    private void process(String command) //TODO this method is ugly, make it nice
     {
         try
         {
