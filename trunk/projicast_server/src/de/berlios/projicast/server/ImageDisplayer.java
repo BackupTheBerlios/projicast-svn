@@ -142,7 +142,7 @@ public class ImageDisplayer
         {
             throw new IllegalStateException("Not up");
         }
-        image = copy(newImage, BufferedImage.TYPE_INT_ARGB);
+        image = copy(newImage, BufferedImage.TYPE_INT_RGB);
     }
     
     /**
@@ -242,7 +242,7 @@ public class ImageDisplayer
                             g.drawImage(curImg, 0, 0, null);
                             g.dispose();
                             strat.show();
-                            Thread.sleep(10);
+                            Thread.sleep(1000);
                         }
                         BufferedImage old = curImg;
                         BufferedImage newI = image;

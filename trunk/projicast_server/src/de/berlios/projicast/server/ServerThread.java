@@ -79,9 +79,9 @@ public class ServerThread extends Thread
             ssc.configureBlocking(false);
             ss.bind(new InetSocketAddress(ftPort));
             ssc.register(selector, SelectionKey.OP_ACCEPT, new FileAcceptor(selector, configuration));
+            ByteBuffer buf = ByteBuffer.allocateDirect(8 * 4096);
             while(running)
             {
-                ByteBuffer buf = ByteBuffer.allocateDirect(8 * 4096);
                 int len = 0;
                 Iterator<SelectionKey> it;
                 Set<SelectionKey> keys;
