@@ -19,9 +19,12 @@
 
 package de.berlios.projicast.server;
 
+import java.awt.Color;
+import java.awt.Font;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
@@ -181,6 +184,11 @@ public class ControlSession extends BasicInputHandler
                     displayImage(Integer.parseInt(split[1]));
                     return;
                 }
+                else if((split.length == 2) && split[0].equals("TEXT"))
+                {
+                    displayText(URLDecoder.decode(split[1], "UTF-8"));
+                    return;
+                }
                 else if((split.length == 3) && split[0].equals("DELETE"))
                 {
                     if(split[1].equals("VIDEO"))
@@ -270,6 +278,20 @@ public class ControlSession extends BasicInputHandler
         {
             writeCommand("ERROR File not on server");
         }
+    }
+    
+    /**
+     * Displays the specified text and replies thereafter.
+     * 
+     * @param text  the text to display
+     */
+    private void displayText(String text)
+    {
+        configuration.getPlayer().displayText(
+                text,
+                new Font("Arial", Font.BOLD, 40),
+                Color.WHITE, 100, 100);
+        writeCommand("TEXT OK");
     }
     
     /**

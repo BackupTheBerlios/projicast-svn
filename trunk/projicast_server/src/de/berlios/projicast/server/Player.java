@@ -19,6 +19,13 @@
 
 package de.berlios.projicast.server;
 
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics2D;
+import java.awt.Image;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -39,6 +46,7 @@ public class Player
     private SlideshowThread slideshowThread;
     private MPlayerThread mplayerThread;
     private State state = State.STOPPED;
+    private Image defaultBackground;
     
     //This variable is for starting the slideshow automatically again after a video files
     //is played and the slideshow was running before
@@ -57,9 +65,10 @@ public class Player
      * @param mplayerPath  the path to the mplayer executable
      * @param slideshowPath  the path to the slideshow folder
      */
-    public Player(ImageDisplayer imageDisp, String mplayerPath, long slideshowDelay)
+    public Player(ImageDisplayer imageDisp, Image defaultBackground, String mplayerPath, long slideshowDelay)
     {
         this.imageDisp = imageDisp;
+        this.defaultBackground = defaultBackground;
         this.mplayerPath = mplayerPath;
         this.slideshowDelay = slideshowDelay;
         if(!imageDisp.isUp())
@@ -108,6 +117,41 @@ public class Player
     {
         internalStop();
         imageDisp.displayImage(file);
+        state = State.DISPLAYING_PICTURE;
+    }
+    
+    /**
+     * Displays a text string against the Player default background.
+     * 
+     * @param text   the text to display
+     * @param font   the font to use
+     * @param color  the color to draw the font with
+     * @param x      the X position of the text
+     * @param y      the Y position of the text
+     */
+    public synchronized void displayText(String text, Font font, Color color, int x, int y)
+    {
+        internalStop();
+        BufferedImage buffer = new BufferedImage(
+                defaultBackground.getWidth(null),
+                defaultBackground.getHeight(null),
+                BufferedImage.TYPE_4BYTE_ABGR);
+        Graphics2D g = (Graphics2D)buffer.getGraphics();
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        
+        g.setFont(font);
+        g.setColor(color);
+        
+        g.drawImage(defaultBackground, 0, 0, Color.BLACK, null);
+        String[] lines = text.split("\n");
+        int pos = y;
+        for(String line : lines)
+        {
+            g.drawString(line, x, pos);
+            pos += font.getSize() * 1.2f;
+        }
+        
+        imageDisp.displayImage(buffer);
         state = State.DISPLAYING_PICTURE;
     }
     

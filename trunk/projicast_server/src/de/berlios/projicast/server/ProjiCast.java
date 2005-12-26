@@ -166,7 +166,7 @@ public class ProjiCast
         catch (InterruptedException e) {}
         imageDisp.fadeToBlack();
         
-        Player player = new Player(imageDisp, mplayerPath, slideshowDelay);
+        Player player = new Player(imageDisp, ImageIO.read(new File("splash.jpg")), mplayerPath, slideshowDelay);
         FileManager videoManager = new FileManager(videoPath);
         FileManager imageManager = new FileManager(imagePath);
         Configuration configuration = new Configuration(
