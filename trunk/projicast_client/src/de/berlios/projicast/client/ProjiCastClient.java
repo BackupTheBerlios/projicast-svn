@@ -42,6 +42,7 @@ import javax.swing.JList;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 
 
 public class ProjiCastClient extends JFrame
@@ -50,6 +51,7 @@ public class ProjiCastClient extends JFrame
     private JList videoList;
     private JList imageList;
     private JList slideshowList;
+    private JTextArea textArea;
     
     private ServerFileListModel videoModel;
     private ServerFileListModel imageModel;
@@ -351,6 +353,34 @@ public class ProjiCastClient extends JFrame
         gc.gridheight = 5;
         pane.add(panel, gc);
         
+        //======================================
+        
+        textArea = new JTextArea();
+        scrollPane = new JScrollPane(textArea);
+        scrollPane.setPreferredSize(new Dimension(500, 200));
+        gc.gridx = 0;
+        gc.gridy = 7;
+        gc.weightx = 1;
+        gc.weighty = 1;
+        gc.gridwidth = 5;
+        gc.gridheight = 1;
+        pane.add(scrollPane, gc);
+        
+        button = new JButton("Display text");
+        gc.gridx = 0;
+        gc.gridy = 8;
+        gc.weightx = 0;
+        gc.weighty = 0;
+        gc.gridwidth = 5;
+        button.addActionListener(new ActionListener()
+        {
+            public void actionPerformed(ActionEvent arg0)
+            {
+                displayText();
+            }
+        });
+        pane.add(button, gc);
+        
         pack();
     }
     
@@ -427,6 +457,29 @@ public class ProjiCastClient extends JFrame
                     "Error",
                     JOptionPane.ERROR_MESSAGE);
             refresh();
+        }
+        catch(MalformedAnswerException e)
+        {
+            unexpectedReply();
+        }
+        catch(ProjiCastException e)
+        {
+            e.printStackTrace();
+        }
+        catch (IOException e)
+        {
+            inputOutputError(e);
+        }
+    }
+    
+    /**
+     * Displays the specified text on the server.
+     */
+    public void displayText()
+    {
+        try
+        {
+            client.displayText(textArea.getText());
         }
         catch(MalformedAnswerException e)
         {

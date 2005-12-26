@@ -26,6 +26,7 @@ import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -360,6 +361,28 @@ public class Client
             throw new FileNotOnServerException("File not on server!");
         }
         else if(!command.equals("IMAGE OK"))
+        {
+            close();
+            throw new MalformedAnswerException("Unexpected answer: " + command);
+        }
+    }
+    
+    /**
+     * Displays the specified text on the server.
+     * 
+     * @param text  the text to display
+     */
+    public synchronized void displayText(String text) throws ProjiCastException, IOException
+    {
+        if(state != State.CONNECTED)
+        {
+            throw new IllegalStateException("Must be connected!");
+        }
+        
+        out.println("TEXT " + URLEncoder.encode(text, "UTF-8"));
+        out.flush();
+        String command = in.readLine();
+        if(!command.equals("TEXT OK"))
         {
             close();
             throw new MalformedAnswerException("Unexpected answer: " + command);
